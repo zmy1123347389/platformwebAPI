@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.lsd.video.dao.GiftDao">
+
+	<select id="queryGifts" resultType="com.lsd.video.domain.Gift">
+		SELECT
+			g.id,
+			g.url,
+			g.name,
+			g.flower
+		FROM
+ 			lsd_gift g WHERE g.deleted = 0 ORDER BY g.flower ASC
+	</select>
+
+	<select id="queryGiftById" resultType="com.lsd.video.domain.Gift">
+		SELECT
+			*
+		FROM
+ 			lsd_gift g
+ 		WHERE
+ 			id = #{giftId}
+	</select>
+
+	<insert id="saveSendGiftRecord" parameterType="com.lsd.video.domain.SendGift">
+		INSERT INTO lsd_gift_record (
+			id,
+			from_user,
+			to_user,
+			gift_id
+		) VALUES (
+			#{id},
+			#{fromUser},
+			#{toUser},
+			#{giftId}
+		)
+	</insert>
+
+	<select id="queryMyGift" resultType="com.lsd.video.domain.MyGift">
+		SELECT
+			COUNT(r.id) AS nums,
+			g.`name` AS gift_name,
+			g.url
+		FROM
+			lsd_gift_record r
+		LEFT JOIN lsd_gift g ON g.id = r.gift_id
+		WHERE
+			r.to_user = #{userId}
+		GROUP BY
+			r.gift_id
+	</select>
+</mapper>

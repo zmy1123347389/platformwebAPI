@@ -1,0 +1,746 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ILawProblemWarningDao">
+    <!-- 统计110接处警结果反馈超期 -->
+    <select id="selectReceptionOverdue" resultType="map">
+    	SELECT 
+    		A.AJBH, B.ZDZ AS AJSLDW, A.BJNR AS AJMC, A.JCJBH,
+    		TO_CHAR(TO_DATE(SUBSTR(A.JJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS JJSJ,
+    		CASE WHEN A.CJSJ <![CDATA[<>]]> '0' THEN TO_CHAR(TO_DATE(SUBSTR(A.CJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') ELSE A.CJSJ END AS CJSJ,
+    		CASE WHEN A.CJSJ='0' THEN 
+    			'接处警超期'||TRUNC((SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		ELSE
+    			'接处警超期'||TRUNC((TO_DATE(A.CJSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		END AS OVERFEED,
+    		'接处警还有'||TRUNC(24-(SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24)||'小时到期' AS WARNFEED
+		FROM 
+			JCJ_JBXX A 
+		LEFT JOIN 
+			ZDXX B ON A.AJSLDW=B.ZDDM AND B.ZDBH=1
+		LEFT JOIN 
+			LAW_WARN_REL C ON A.JCJBH=C.ID
+		WHERE 1=1 AND C.ID IS NULL 
+		<if test="ajbh !=null and ajbh !=''">
+			AND (A.JCJBH = #{ajbh} OR A.AJBH = #{ajbh})
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.BJNR LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.AJSLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.JJSJ, 1, 8) = #{slsj}
+		</if>
+		<if test="flag == 1">
+			AND A.CJSJ = '0' AND A.CJBS <![CDATA[<>]]> '2' AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 24 AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 > 12
+			ORDER BY A.JJSJ DESC
+		</if>
+		<if test="flag == 2">
+			AND CASE WHEN A.CJSJ = '0' THEN (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 
+				ELSE (TO_DATE(A.CJSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+				END > 24
+			AND SUBSTR(A.JJSJ, 1, 8) >= '20180101'
+			ORDER BY A.JJSJ DESC
+		</if>
+    </select>
+    
+    <!-- 统计行政案件超期受理 -->
+    <select id="selectAdminCaseOverdue" resultType="map">
+    	SELECT 
+    		A.AJBH, C.ZDZ AS AJSLDW, CASE WHEN B.AJMC IS NULL THEN A.BJNR ELSE B.AJMC END AS AJMC, A.JCJBH, D.ZDZ AS AJZT,
+    		TO_CHAR(TO_DATE(SUBSTR(B.SLSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+    		TO_CHAR(TO_DATE(SUBSTR(A.JJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS JJSJ,
+    		CASE WHEN A.CJSJ <![CDATA[<>]]> '0' THEN TO_CHAR(TO_DATE(SUBSTR(A.CJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') ELSE A.CJSJ END AS CJSJ,
+    		CASE WHEN A.AJBH IS NULL THEN 
+    			'行政案件受案超期'||TRUNC((SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		ELSE
+    			'行政案件受案超期'||TRUNC((TO_DATE(B.SLSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		END AS OVERFEED,
+    		'行政案件受案还有'||TRUNC(24-(SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24)||'小时到期' AS WARNFEED
+		FROM 
+			JCJ_JBXX A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH = B.AJBH
+		LEFT JOIN 
+			ZDXX C ON A.AJSLDW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN 
+			ZDXX D ON B.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN 
+			LAW_WARN_REL E ON A.JCJBH=E.ID
+		WHERE 1=1 AND A.CJBS = '2' AND B.AJLB > '110000' AND SUBSTR(B.AJZT, 1, 1) = '2' AND E.ID IS NULL
+			<if test="ajbh !=null and ajbh !=''">
+				AND (A.JCJBH = #{ajbh} OR A.AJBH = #{ajbh})
+			</if>
+			<if test="ajmc !=null and ajmc !=''">
+				AND CASE WHEN B.AJMC IS NULL THEN A.BJNR ELSE B.AJMC END LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+			</if>
+			<if test="sldw !=null and sldw !=''">
+				AND A.AJSLDW = #{sldw}
+			</if>
+			<if test="slsj !=null and slsj !=''">
+				AND (SUBSTR(A.JJSJ, 1, 8) = #{slsj} OR SUBSTR(B.SLSJ, 1, 8) = #{slsj})
+			</if>
+			<if test="flag == 1">
+				AND A.AJBH IS NULL AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 24 AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 > 12
+				ORDER BY A.JJSJ DESC
+			</if>
+			<if test="flag == 2">
+				AND CASE WHEN A.AJBH IS NULL THEN (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+					ELSE (TO_DATE(B.SLSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+				END > 24
+				AND SUBSTR(A.JJSJ, 1, 8) >= '20180101'
+				ORDER BY A.JJSJ DESC
+			</if>
+    </select>
+    
+    <!-- 统计刑事案件超期受理 -->
+    <select id="selectCriminalCaseOverdue" resultType="map">
+    	SELECT 
+    		A.AJBH, C.ZDZ AS AJSLDW, CASE WHEN B.AJMC IS NULL THEN A.BJNR ELSE B.AJMC END AS AJMC, A.JCJBH, D.ZDZ AS AJZT,
+    		TO_CHAR(TO_DATE(SUBSTR(B.SLSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+    		TO_CHAR(TO_DATE(SUBSTR(A.JJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS JJSJ,
+    		CASE WHEN A.CJSJ <![CDATA[<>]]> '0' THEN TO_CHAR(TO_DATE(SUBSTR(A.CJSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') ELSE A.CJSJ END AS CJSJ,
+    		CASE WHEN A.AJBH IS NULL THEN 
+    			'刑事案件受案超期'||TRUNC((SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		ELSE
+    			'刑事案件受案超期'||TRUNC((TO_DATE(B.SLSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24)||'小时'
+    		END AS OVERFEED,
+    		'刑事案件受案还有'||TRUNC(24-(SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24)||'小时到期' AS WARNFEED
+		FROM 
+			JCJ_JBXX A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH = B.AJBH
+		LEFT JOIN 
+			ZDXX C ON A.AJSLDW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN 
+			ZDXX D ON B.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN 
+			LAW_WARN_REL E ON A.JCJBH=E.ID
+		WHERE 1=1 AND A.CJBS = '2' AND B.AJLB <![CDATA[<=]]> '110000' AND SUBSTR(B.AJZT, 1, 1) = '1' AND E.ID IS NULL
+			<if test="ajbh !=null and ajbh !=''">
+				AND (A.JCJBH = #{ajbh} OR A.AJBH = #{ajbh})
+			</if>
+			<if test="ajmc !=null and ajmc !=''">
+				AND CASE WHEN B.AJMC IS NULL THEN A.BJNR ELSE B.AJMC END LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+			</if>
+			<if test="sldw !=null and sldw !=''">
+				AND A.AJSLDW = #{sldw}
+			</if>
+			<if test="slsj !=null and slsj !=''">
+				AND (SUBSTR(A.JJSJ, 1, 8) = #{slsj} OR SUBSTR(B.SLSJ, 1, 8) = #{slsj})
+			</if>
+			<if test="flag == 1">
+				AND A.AJBH IS NULL AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 24 AND (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 > 12
+				ORDER BY A.JJSJ DESC
+			</if>
+			<if test="flag == 2">
+				AND CASE WHEN A.AJBH IS NULL THEN (SYSDATE - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+					ELSE (TO_DATE(B.SLSJ, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.JJSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+				END > 24
+				AND SUBSTR(A.JJSJ, 1, 8) >= '20180101'
+				ORDER BY A.JJSJ DESC
+			</if>
+    </select>
+    
+    <!-- 统计刑事案件立案超期 -->
+    <select id="selectCriminalRegisterOverdue" resultType="map">
+    	SELECT 
+    		A.AJBH, B.ZDZ AS SLDW, A.AJMC, C.ZDZ AS AJZT,
+    		TO_CHAR(TO_DATE(SUBSTR(A.SLSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+    		CASE WHEN TRIM(A.LARQ) <![CDATA[<>]]> '0' THEN TO_CHAR(TO_DATE(SUBSTR(A.LARQ, 1, 8), 'YYYY-MM-DD'), 'YYYY-MM-DD') ELSE TRIM(A.LARQ) END AS LARQ,
+    		CASE WHEN TRIM(A.LARQ) = '0' THEN 
+    			'刑事案件立案超期'||TRUNC((SYSDATE - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24*7)||'小时'
+    		ELSE
+    			'刑事案件立案超期'||TRUNC((TO_DATE(TRIM(A.LARQ), 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 - 24*7)||'小时'
+    		END AS OVERFEED,
+    		'刑事案件立案还有'||TRUNC(7*24-(SYSDATE - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24)||'小时到期' AS WARNFEED
+		FROM 
+			AJ_JBXX A
+		LEFT JOIN 
+			ZDXX B ON A.SLDW=B.ZDDM AND B.ZDBH=1
+		LEFT JOIN 
+			ZDXX C ON A.AJZT=C.ZDDM AND C.ZDBH=974
+		LEFT JOIN 
+			LAW_WARN_REL D ON A.AJBH=D.ID
+		WHERE 
+			A.AJLB <![CDATA[<=]]> '110000' AND A.AJZT LIKE '1%' AND D.ID IS NULL 
+			<if test="ajbh !=null and ajbh !=''">
+				AND A.AJBH = #{ajbh}
+			</if>
+			<if test="ajmc !=null and ajmc !=''">
+				AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+			</if>
+			<if test="sldw !=null and sldw !=''">
+				AND A.SLDW = #{sldw}
+			</if>
+			<if test="slsj !=null and slsj !=''">
+				AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+			</if>
+			<if test="flag == 1">
+				AND TRIM(A.LARQ) = '0' AND (SYSDATE - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 24*7 AND (SYSDATE - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 > 5*24
+				AND NOT EXISTS (
+			        SELECT
+			            *
+			        FROM
+			            AJ_JBXX E
+			        WHERE
+			            E.AJZT='103' AND A.AJBH=E.AJBH
+			        AND (TO_DATE(SUBSTR(E.CZSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(E.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 7*24)
+				ORDER BY A.SLSJ DESC
+			</if>
+			<if test="flag == 2">
+				AND CASE WHEN TRIM(A.LARQ) = '0' THEN (SYSDATE - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+					ELSE (TO_DATE(TRIM(A.LARQ), 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24
+				END > 24*7
+				AND SUBSTR(A.SLSJ, 1, 8) >= '20190101'
+				AND NOT EXISTS (
+			        SELECT
+			            *
+			        FROM
+			            AJ_JBXX E
+			        WHERE
+			            E.AJZT='103' AND A.AJBH=E.AJBH
+			        AND (TO_DATE(SUBSTR(E.CZSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(E.SLSJ, 'YYYY-MM-DD HH24:MI:SS'))*24 <![CDATA[<]]> 7*24)
+				ORDER BY A.SLSJ DESC
+			</if>
+    </select>
+    
+    <!-- 统计治安行政案件办理超期30日 -->
+    <select id="selectAdminCaseDealOverdue" resultType="map">
+    	SELECT 
+    		A.AJBH ,
+		    CASE WHEN A.AJMC IS NULL THEN A.JYAQ ELSE A.AJMC END                         AS AJMC ,
+		    TO_CHAR(TO_DATE (A.SLSJ , 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ ,
+		    C.ZDZ                                                                        AS SLDW ,
+		    D.ZDZ                                                                        AS AJZT ,
+		    '行政案件办理超期'||(TRUNC(TO_DATE(TRIM(A.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-TO_DATE(TRIM(A.SLSJ),
+		    'YYYY-MM-DD HH24:MI:SS'))-30)||'天' AS OVERFEED
+		FROM ( SELECT A.AJBH,
+		            A.AJMC,
+		            A.SLSJ,
+		            A.AJZT,
+		            A.SLDW,
+		            A.JYAQ,
+		            A.AJLB,
+		            T.QSSJ,
+		            CASE WHEN A.AJZT='205' THEN 
+		            CASE WHEN TRIM (B.SLSJ) ='0' OR B.SLSJ IS NULL THEN TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') ELSE B.SLSJ END 
+		            WHEN A.AJZT='206' OR A.AJZT='207' THEN 
+		            CASE WHEN TRIM (A.JARQ) ='0' OR A.JARQ IS NULL THEN TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') ELSE A.JARQ END
+		            ELSE T.QSSJ END AS ZZSJ
+		        FROM AJ_JBXX A
+		        LEFT JOIN AJ_JBXX B ON A.YAJBH=B.AJBH
+		        INNER JOIN
+				(	SELECT 
+	            		MIN(QSSJ) AS QSSJ, AJBH
+	            	FROM 
+	            		AJ_RYCLCS D
+	                WHERE TRIM(D.QSSJ) !='0' AND D.QSSJ IS NOT NULL
+	                GROUP BY AJBH) T ON A.AJBH=T.AJBH
+				) A
+				LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+				LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+				LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+		WHERE 
+			A.AJLB NOT IN ('71700','300325','30662','30663','50200','50201','50202','50203','50204','50210','50211','50212','50216'
+			,'50220','50221','50222','50223','50224','50227','50228','50230','50237','50299','20910','20911','20912'
+			,'20913','20914','20915','20916','300506','300507','300508','30500','30510','30520','30530','30540','30550'
+			,'30560','30570','30580','30599','300326','30805','50300','60125','60180','60185','60186')
+			AND E.ID IS NULL AND TO_DATE(TRIM(A.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-TO_DATE(TRIM(A.SLSJ),'YYYY-MM-DD HH24:MI:SS')>30
+			AND A.AJZT NOT IN ('203','204') AND SUBSTR(A.SLSJ, 1, 8) >= '20180101'
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 统计治安行政案件办理预警 -->
+    <select id="selectAdminCaseDealWarn" resultType="map">
+    	SELECT
+		    A.AJBH,
+		    CASE WHEN A.AJMC IS NULL THEN A.JYAQ ELSE A.AJMC END AS AJMC,
+		    TO_CHAR(TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+		    C.ZDZ AS SLDW,
+		    D.ZDZ AS AJZT,
+		    '行政案件办理还有'||(TRUNC(TO_DATE(A.SLSJ,'YYYY-MM-DD HH24:MI:SS')-SYSDATE)+30)||'天过期' WARNFEED   
+		FROM AJ_JBXX A
+		LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+		WHERE
+		    A.AJLB > '110000'
+		    AND E.ID IS NULL
+			AND A.AJZT LIKE '2%'
+			AND A.AJZT IN('201','202')
+			AND TRUNC(TO_DATE(A.SLSJ,'YYYY-MM-DD HH24:MI:SS')-SYSDATE)+30>0 
+			AND TRUNC(TO_DATE(A.SLSJ,'YYYY-MM-DD HH24:MI:SS')-SYSDATE)+30<![CDATA[<=]]>5
+			AND A.AJLB NOT IN ('71700','300325','30662','30663','50200','50201','50202','50203','50204','50210','50211','50212','50216'
+			,'50220','50221','50222','50223','50224','50227','50228','50230','50237','50299','20910','20911','20912'
+			,'20913','20914','20915','20916','300506','300507','300508','30500','30510','30520','30530','30540','30550'
+			,'30560','30570','30580','30599','300326','30805','50300','60125','60180','60185','60186')
+			AND NOT EXISTS (SELECT R.AJBH FROM AJ_RYCLCS R WHERE A.AJBH=R.AJBH)
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件拘留超期 -->
+    <select id="selectCriminalCaseDetentionOverdue" resultType="map"> 
+	SELECT D.AJBH,
+		D.AJMC,
+		ZDZ AS AJLB,
+		D.ZDZ AS AJZT,
+		C.ZDZ AS SLDW,
+		D.RYCSBH,
+		TO_CHAR(TO_DATE(D.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+		'拘留超期'||D.OVERFEED||'天' as OVERFEED,
+		TO_CHAR(TO_DATE(D.QSSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+		(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = D.RYBH AND ROWNUM=1) AS RYXM,
+		TO_CHAR(TO_DATE(D.ZZSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ
+		FROM OVERDUE_DATA D
+		LEFT JOIN ZDXX B ON D.AJLB=B.ZDDM AND B.ZDBH=1650
+		LEFT JOIN ZDXX C ON D.BADW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON D.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN LAW_WARN_REL E ON D.RYCSBH=E.ID
+		WHERE D.CSLB='1202'	AND E.ID IS NULL
+		AND TRIM(D.QSSJ) !='0' AND TRIM(D.ZZSJ) !='0' AND D.QSSJ IS NOT NULL AND  D.ZZSJ IS NOT NULL
+		AND D.AJBH IS NOT NULL AND SUBSTR(D.SLSJ, 1, 8) >= '20180101'
+		AND D.OVERFEED>0
+		<if test="ajbh !=null and ajbh !=''">
+			AND D.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND D.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND D.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(D.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY D.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件拘留预警 -->
+    <select id="selectCriminalCaseDetentionWarn" resultType="map">
+    	SELECT * FROM (
+    	SELECT A.AJBH,
+			CASE WHEN A.AJMC IS NOT NULL THEN A.AJMC ELSE A.JYAQ END AS AJMC,
+			B.ZDZ AS AJLB,
+			D.ZDZ AS AJZT,
+			C.ZDZ AS SLDW,
+			R.RYCSBH,
+			TO_CHAR(TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+			'拘留还有'||TRUNC(TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE)||'天到期' AS WARNFEED,
+			TO_CHAR(TO_DATE(TRIM(R.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+			TO_CHAR(TO_DATE(TRIM(R.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ,
+			(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = R.RYBH AND ROWNUM=1) AS RYXM,
+			ROWNUM AS INX
+			FROM (SELECT R.CSLB,R.AJBH,R.RYBH,R.RYCSBH,R.QSSJ,R.SPR,R.SPJG,
+				CASE WHEN Y.ZZSJ IS NULL OR Y.ZZSJ='0' THEN R.ZZSJ ELSE Y.ZZSJ END AS ZZSJ
+				FROM 
+				AJ_RYCLCS R
+				LEFT JOIN AJ_YCCS Y ON R.RYCSBH=Y.RYCSBH
+				WHERE R.CSLB='1202' AND R.QSSJ!='0' AND R.ZZSJ !='0') R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH
+			LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650
+			LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+			LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN 
+				LAW_WARN_REL E ON A.AJBH=E.ID			
+		WHERE
+			R.CSLB='1202' AND E.ID IS NULL
+			<!--AND R.SPR IN('6104001327','6104001829','6104000715','6104001100','6104001365','6104001111','6104005683','6104001107')--> 
+			AND R.SPJG = '01'
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>1
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1215'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS'))) A
+			WHERE <!--A.INX IN (
+			SELECT MIN(INX) AS INX FROM(
+			SELECT A.AJBH,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH			
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1202' AND E.ID IS NULL
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>1
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1215'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS')))
+			GROUP BY AJBH)
+			AND--> A.AJBH  IS NOT NULL
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件逮捕超期 -->
+    <select id="selectCriminalCaseArrestOverdue" resultType="map">
+	SELECT D.AJBH,
+		D.AJMC,
+		ZDZ AS AJLB,
+		D.ZDZ AS AJZT,
+		C.ZDZ AS SLDW,
+		D.RYCSBH,
+		TO_CHAR(TO_DATE(D.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+		'逮捕超期'||D.OVERFEED||'天' as OVERFEED,
+		TO_CHAR(TO_DATE(TRIM(D.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+		(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = D.RYBH AND ROWNUM=1) AS RYXM,
+		TO_CHAR(TO_DATE(TRIM(D.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ
+		FROM OVERDUE_DATA D
+		LEFT JOIN ZDXX B ON D.AJLB=B.ZDDM AND B.ZDBH=1650
+		LEFT JOIN ZDXX C ON D.BADW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON D.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN LAW_WARN_REL E ON D.RYCSBH=E.ID
+		WHERE D.CSLB='1222'	AND E.ID IS NULL
+		AND TRIM(D.QSSJ) !='0' AND TRIM(D.ZZSJ) !='0' AND D.QSSJ IS NOT NULL AND  D.ZZSJ IS NOT NULL
+		AND D.AJBH IS NOT NULL AND SUBSTR(D.SLSJ, 1, 8) >= '20180101'
+		AND D.OVERFEED>0
+		<if test="ajbh !=null and ajbh !=''">
+			AND D.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND D.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND D.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(D.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY D.SLSJ DESC
+    </select>
+    
+    <!--  刑事案件逮捕预警 -->
+    <select id="selectCriminalCaseArrestWarn" resultType="map">
+    	SELECT * FROM (
+    	SELECT A.AJBH,
+			CASE WHEN A.AJMC IS NOT NULL THEN A.AJMC ELSE A.JYAQ END AS AJMC,
+			B.ZDZ AS AJLB,
+			D.ZDZ AS AJZT,
+			C.ZDZ AS SLDW,
+			R.RYCSBH,
+			TO_CHAR(TO_DATE(SUBSTR(A.SLSJ, 1, 14), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+			'逮捕还有'||TRUNC(TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE)||'天到期' AS WARNFEED,
+			TO_CHAR(TO_DATE(TRIM(R.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+			TO_CHAR(TO_DATE(TRIM(R.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ,
+			(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = R.RYBH AND ROWNUM=1) AS RYXM,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH
+			LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650
+			LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+			LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH)T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1222' AND E.ID IS NULL
+			<!--AND R.SPR IN('6104001327','6104001829','6104000715','6104001100','6104001365','6104001111','6104005683','6104001107')--> 
+			AND R.SPJG = '01'
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>10
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS'))) A
+			WHERE <!--A.INX IN (
+			SELECT MIN(INX) AS INX FROM(
+			SELECT A.AJBH,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH			
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1222' AND E.ID IS NULL
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>10
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS')))
+			GROUP BY AJBH)
+			AND--> A.AJBH  IS NOT NULL
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件取保候审超期 -->
+    <select id="selectCriminalCaseBPTOverdue" resultType="map">
+    SELECT D.AJBH,
+		D.AJMC,
+		ZDZ AS AJLB,
+		D.ZDZ AS AJZT,
+		C.ZDZ AS SLDW,
+		D.RYCSBH,
+		TO_CHAR(TO_DATE(D.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+		'取保候审超期'||D.OVERFEED||'天' as OVERFEED,
+		TO_CHAR(TO_DATE(TRIM(D.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+		(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = D.RYBH AND ROWNUM=1) AS RYXM,
+		TO_CHAR(TO_DATE(TRIM(D.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ
+		FROM OVERDUE_DATA D
+		LEFT JOIN ZDXX B ON D.AJLB=B.ZDDM AND B.ZDBH=1650
+		LEFT JOIN ZDXX C ON D.BADW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON D.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN LAW_WARN_REL E ON D.RYCSBH=E.ID
+		WHERE D.CSLB='1206'	AND E.ID IS NULL
+		AND TRIM(D.QSSJ) !='0' AND TRIM(D.ZZSJ) !='0' AND D.QSSJ IS NOT NULL AND  D.ZZSJ IS NOT NULL
+		AND D.AJBH IS NOT NULL AND SUBSTR(D.SLSJ, 1, 8) >= '20180101'
+		AND D.OVERFEED>0
+		<if test="ajbh !=null and ajbh !=''">
+			AND D.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND D.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND D.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(D.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY D.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件取保候审预警 -->
+    <select id="selectCriminalCaseBPTWarn" resultType="map">
+    	SELECT * FROM (
+    	SELECT A.AJBH,
+			CASE WHEN A.AJMC IS NOT NULL THEN A.AJMC ELSE A.JYAQ END AS AJMC,
+			B.ZDZ AS AJLB,
+			D.ZDZ AS AJZT,
+			C.ZDZ AS SLDW,
+			R.RYCSBH,
+			TO_CHAR(TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+			'取保候审还有'||TRUNC(TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE)||'天到期' AS WARNFEED,
+			TO_CHAR(TO_DATE(TRIM(R.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+			TO_CHAR(TO_DATE(TRIM(R.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ,
+			(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = R.RYBH AND ROWNUM=1) AS RYXM,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH
+			LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650
+			LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+			LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH)T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1206' AND E.ID IS NULL
+			<!--AND R.SPR IN('6104001327','6104001829','6104000715','6104001100','6104001365','6104001111','6104005683','6104001107')-->
+			AND R.SPJG = '01'
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>30
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS'))) A
+			WHERE <!--A.INX IN (
+			SELECT MIN(INX) AS INX FROM(
+			SELECT A.AJBH,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH			
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1206' AND E.ID IS NULL
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>30
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS')))
+			GROUP BY AJBH)
+			AND--> A.AJBH  IS NOT NULL
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件监视居住超期 -->
+    <select id="selectCriminalCaseSOROverdue" resultType="map">
+    SELECT D.AJBH,
+		D.AJMC,
+		ZDZ AS AJLB,
+		D.ZDZ AS AJZT,
+		C.ZDZ AS SLDW,
+		D.RYCSBH,
+		TO_CHAR(TO_DATE(D.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+		'监视居住超期'||D.OVERFEED||'天' AS OVERFEED,
+		TO_CHAR(TO_DATE(TRIM(D.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+		(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = D.RYBH AND ROWNUM=1) AS RYXM,
+		TO_CHAR(TO_DATE(TRIM(D.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ
+		FROM OVERDUE_DATA D
+		LEFT JOIN ZDXX B ON D.AJLB=B.ZDDM AND B.ZDBH=1650
+		LEFT JOIN ZDXX C ON D.BADW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON D.AJZT=D.ZDDM AND D.ZDBH=974
+		LEFT JOIN LAW_WARN_REL E ON D.RYCSBH=E.ID
+		WHERE D.CSLB='1204'	AND E.ID IS NULL
+		AND TRIM(D.QSSJ) !='0' AND TRIM(D.ZZSJ) !='0' AND D.QSSJ IS NOT NULL AND  D.ZZSJ IS NOT NULL
+		AND D.AJBH IS NOT NULL AND SUBSTR(D.SLSJ, 1, 8) >= '20180101'
+		AND D.OVERFEED>0
+		<if test="ajbh !=null and ajbh !=''">
+			AND D.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND D.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND D.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(D.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY D.SLSJ DESC
+    </select>
+    
+    <!-- 刑事案件监视居住预警 -->
+    <select id="selectCriminalCaseSORWarn" resultType="map">
+    	SELECT * FROM (
+    	SELECT A.AJBH,
+			A.AJMC,
+			B.ZDZ AS AJLB,
+			D.ZDZ AS AJZT,
+			C.ZDZ AS SLDW,
+			R.RYCSBH,
+			TO_CHAR(TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,
+			'监视居住还有'||TRUNC(TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE)||'天到期' AS WARNFEED,
+			TO_CHAR(TO_DATE(TRIM(R.QSSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS QSSJ,
+			TO_CHAR(TO_DATE(TRIM(R.ZZSJ), 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS ZZSJ,
+			(SELECT XM FROM AJ_XYRXX X WHERE X.RYBH = R.RYBH AND ROWNUM=1) AS RYXM,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH
+			LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650
+			LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+			LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1204' AND E.ID IS NULL
+			<!--AND R.SPR IN('6104001327','6104001829','6104000715','6104001100','6104001365','6104001111','6104005683','6104001107')-->
+			AND R.SPJG = '01'
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>30
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS'))) A
+			WHERE <!--A.INX IN (
+			SELECT MIN(INX) AS INX FROM(
+			SELECT A.AJBH,
+			ROWNUM AS INX
+			FROM AJ_RYCLCS R 
+			LEFT JOIN AJ_JBXX A ON R.AJBH=A.AJBH			
+			LEFT JOIN
+			(SELECT AJBH,RYBH,MAX(QSSJ) AS QSSJ FROM AJ_RYCLCS 
+			WHERE QSSJ!='0' AND ZZSJ !='0' GROUP BY AJBH,RYBH) T
+			ON R.QSSJ=T.QSSJ AND R.AJBH=T.AJBH AND R.RYBH=T.RYBH
+			LEFT JOIN LAW_WARN_REL E ON A.AJBH=E.ID
+			WHERE
+			R.CSLB='1204' AND E.ID IS NULL
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')>SYSDATE 
+			AND TO_DATE(TRIM(R.ZZSJ),'YYYY-MM-DD HH24:MI:SS')-SYSDATE<![CDATA[<]]>30
+			AND TRIM(R.QSSJ) !='0' AND TRIM(R.ZZSJ) !='0' AND R.QSSJ IS NOT NULL AND  R.ZZSJ IS NOT NULL
+			AND R.RYBH NOT IN (SELECT B.RYBH FROM AJ_RYCLCS B WHERE R.AJBH=B.AJBH AND R.RYBH=B.RYBH AND B.CSLB='1219'			
+			AND TO_DATE(TRIM(B.CBRQ),'YYYY-MM-DD HH24:MI:SS') between to_date(trim(r.qssj),'YYYY-MM-DD HH24:MI:SS') and to_date(trim(r.zzsj),'YYYY-MM-DD HH24:MI:SS')))
+			GROUP BY AJBH)
+			AND--> A.AJBH  IS NOT NULL
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+    
+    <!-- 取消预警案件 -->
+    <insert id="lawWarningCancelInsert">
+		INSERT INTO LAW_WARN_REL(ID, TYPE) VALUES(#{ajbh}, #{type})
+	</insert>
+	
+	<!-- 恢复预警案件 -->
+	<delete id="lawWarningCancelDeleteById">
+		DELETE FROM LAW_WARN_REL WHERE ID = #{ajbh}
+	</delete>
+</mapper>

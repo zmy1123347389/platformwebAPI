@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ILawAudioVideoDao">
+	<!-- 音视频信息查询 -->
+    <select id="selectAllAudioVideoByPage" resultType="map">
+    	SELECT 
+			A.VIDEO_ID, A.UPLOAD_DATE, A.PIC_DATE, A.UPLOAD_UNIT, B.ZDZ AS UPLOAD_UNITNAME, A.UPLOAD_IP, 
+			A.DESTFILE_PATH, A.GRADE_ID, A.GRADE_NAME, A.CHS_ID, A.CHS_NAME, A.SYNCHRO_DATE, A.AJBH, C.AJMC, C.JYAQ,
+			D.BJNR,D.CJXQ,A.JCJBH,A.LAW_FILE_ID
+		FROM 
+			LAW_AUDIOVIDEO_INFO A
+		LEFT JOIN ZDXX B ON A.UPLOAD_UNIT=B.ZDDM AND B.ZDBH=1
+		LEFT JOIN AJ_JBXX C ON A.AJBH=C.AJBH
+		LEFT JOIN JCJ_JBXX D ON D.JCJBH=A.JCJBH
+		WHERE 1=1 AND (A.CHS_ID = '1' OR A.CHS_ID = '2')
+		<if test="docType !=null and docType !=''">
+			AND A.CHS_ID = #{docType}
+		</if>
+		<if test="unitNumber !=null and unitNumber !=''">
+			AND A.UPLOAD_UNIT = #{unitNumber}
+		</if>
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="isRelative !=null and isRelative !=''">
+			<if test="isRelative == 1">
+				AND A.AJBH IS NOT NULL AND A.AJBH <![CDATA[<>]]> ' ' 
+			</if>
+			<if test="isRelative == 2">
+				AND (A.AJBH IS NULL OR A.AJBH = ' ')
+			</if>
+		</if>
+		<if test="upLoadDate !=null and upLoadDate !=''">
+			AND TO_CHAR(TO_DATE(SUBSTR(A.UPLOAD_DATE, 1, 10),'yyyy-MM-dd'), 'yyyyMMdd') = #{upLoadDate}
+		</if>
+		<if test="picDate !=null and picDate !=''">
+			AND TO_CHAR(TO_DATE(SUBSTR(A.PIC_DATE, 1, 10),'yyyy-MM-dd'), 'yyyyMMdd') = #{picDate}
+		</if>
+		ORDER BY A.PIC_DATE DESC
+    </select>
+    
+    <!-- 音视频数据最新上传日期 -->
+    <select id="selectVideoDataLatestDate" resultType="map">
+    	SELECT 
+			DISTINCT MAX(SUBSTR(A.UPLOAD_DATE, 1, 10)) AS UPLOAD_DATE
+		FROM 
+			LAW_AUDIOVIDEO_INFO A
+		WHERE 1=1 AND (A.CHS_ID = '1' OR A.CHS_ID = '2')
+		<if test="uploadDate !=null and uploadDate !=''">
+			AND TO_CHAR(TO_DATE(SUBSTR(A.UPLOAD_DATE, 1, 10),'yyyy-MM-dd'), 'yyyy-MM-dd') = #{uploadDate}
+		</if>
+		<if test="unitNumber !=null and unitNumber !=''">
+			AND A.UPLOAD_UNIT = #{unitNumber}
+		</if>
+		ORDER BY A.UPLOAD_DATE DESC
+    </select>
+    
+    <!-- 执法音视频未关联查询 -->
+    <select id="selectVideoUnrelated" resultType="map">
+    	SELECT 
+    		UPLOAD_UNIT, COUNT(VIDEO_ID) AS UNRELATED 
+    	FROM 
+    		LAW_AUDIOVIDEO_INFO 
+    	WHERE 
+    		(AJBH IS NULL OR AJBH = ' ') AND (CHS_ID = '1' OR CHS_ID = '2')
+    	<!--
+    	<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(MODIFY_TIME, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 7), 'yyyy-MM'), 'yyyyMM') = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4">
+			<if test="startDate !=null and startDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 10), 'yyyy-MM-dd'), 'yyyyMMdd') <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 10), 'yyyy-MM-dd'), 'yyyyMMdd') <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		 -->
+    	GROUP BY UPLOAD_UNIT ORDER BY UPLOAD_UNIT ASC
+    </select>
+    
+    <!-- 执法音视频已关联查询 -->
+    <select id="selectVideoRelated" resultType="map">
+    	SELECT 
+    		UPLOAD_UNIT,COUNT(VIDEO_ID) AS RELATED 
+    	FROM 
+    		LAW_AUDIOVIDEO_INFO 
+    	WHERE 
+    		AJBH IS NOT NULL AND AJBH <![CDATA[<>]]> ' ' AND (CHS_ID = '1' OR CHS_ID = '2')
+    	<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(MODIFY_TIME, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 7), 'yyyy-MM'), 'yyyyMM') = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4">
+			<if test="startDate !=null and startDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 10), 'yyyy-MM-dd'), 'yyyyMMdd') <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND TO_CHAR(TO_DATE(SUBSTR(MODIFY_TIME, 1, 10), 'yyyy-MM-dd'), 'yyyyMMdd') <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+    	GROUP BY UPLOAD_UNIT ORDER BY UPLOAD_UNIT ASC
+    </select>
+    
+    <!-- 更新执法音视频关联案件数据 -->
+    <update id="updateVideoRelatedCase">
+		UPDATE
+			LAW_AUDIOVIDEO_INFO
+		SET
+			AJBH = #{ajbh},
+			MODIFY_TIME = #{modifyTime},
+			MODIFY_USER = #{userId}
+		WHERE
+			VIDEO_ID = #{videoId} AND UPLOAD_UNIT = #{uploadUnit}
+	</update>
+</mapper>

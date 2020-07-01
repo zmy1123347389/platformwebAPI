@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ICaseDetailDao">
+	<resultMap id="personAcceptProcessDetail" type="com.behere.portal.domin.SuspectAcceptProcessBean">
+        <result column="XM" property="name"/>
+        <result column="XB" property="sex"/>
+        <result column="MZ" property="nation"/>
+        <result column="CSRQ" property="birthday"/>
+        <result column="ZZXZ" property="address"/>
+        <result column="GMSFHM" property="cardNum"/>
+        <result column="RYBH" property="number"/>
+    </resultMap>
+	
+	<!-- 案件详情基本信息查询 -->
+    <select id="selectCaseDetailMessage" resultType="map">
+    	SELECT 
+			A.AJBH,A.AJMC,B.ZDZ AS AJLB,A.JYAQ,C.ZDZ AS BADW,
+			TO_DATE(A.SLSJ, 'YYYY-MM-DD HH24:MI:SS') AS SLSJ,A.SLR,D.ZDZ AS AJZT
+		FROM 
+			AJ_JBXX A
+		LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650 
+		LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND A.AJBH = #{caseNum}
+		</if>
+    </select>
+    
+    <!-- 民警信息查询 -->
+    <select id="selectPoliceMessage" resultType="map">
+    	SELECT YHXM FROM YHB
+		WHERE 1=1
+		<if test="policeNum !=null and policeNum !=''">
+			AND USER_ID = #{policeNum}
+		</if>
+    </select>
+    
+    <!-- 嫌疑人员信息查询 -->
+    <select id="selectSuspectDetailMessage" resultMap="personAcceptProcessDetail">
+    	SELECT 
+    		A.XM,B.ZDZ AS XB,C.ZDZ AS MZ,TO_CHAR(TO_DATE(A.CSRQ, 'YYYY-MM-DD'), 'YYYY"年"MM"月"DD"日"') AS CSRQ,A.ZZXZ,A.GMSFHM,A.RYBH
+		FROM 
+			AJ_XYRXX A
+		LEFT JOIN ZDXX B ON A.XB=B.ZDDM AND B.ZDBH=1997
+		LEFT JOIN ZDXX C ON A.MZ=C.ZDDM AND C.ZDBH=474
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND A.AJBH = #{caseNum}
+		</if>
+    </select>
+    
+    <!-- 受害人员信息查询 -->
+    <select id="selectVictimDetailMessage" resultMap="personAcceptProcessDetail">
+    	SELECT 
+    		A.XM,B.ZDZ AS XB,C.ZDZ AS MZ,TO_CHAR(TO_DATE(A.CSRQ, 'YYYY-MM-DD'), 'YYYY"年"MM"月"DD"日"') AS CSRQ,A.ZZXZ,A.GMSFHM
+		FROM 
+			AJ_SHRXX A
+		LEFT JOIN ZDXX B ON A.XB=B.ZDDM AND B.ZDBH=1997
+		LEFT JOIN ZDXX C ON A.MZ=C.ZDDM AND C.ZDBH=474
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND A.AJBH = #{caseNum}
+		</if>
+    </select>
+    
+    <!-- 证人信息查询 -->
+    <select id="selectAttestorDetailMessage" resultMap="personAcceptProcessDetail">
+    	SELECT 
+    		A.XM,B.ZDZ AS XB,C.ZDZ AS MZ,TO_CHAR(TO_DATE(A.CSRQ, 'YYYY-MM-DD'), 'YYYY"年"MM"月"DD"日"') AS CSRQ,A.ZZXZ,A.GMSFHM
+		FROM 
+			AJ_ZRXX A
+		LEFT JOIN ZDXX B ON A.XB=B.ZDDM AND B.ZDBH=1997
+		LEFT JOIN ZDXX C ON A.MZ=C.ZDDM AND C.ZDBH=474
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND A.AJBH = #{caseNum}
+		</if>
+    </select>
+    
+    <!-- 嫌疑人案件受理流程查询 -->
+    <select id="selectSuspectAcceptProcess" resultType="map">
+    	SELECT 
+    		TO_CHAR(TO_DATE(A.CBRQ, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS') AS CBRQ, B.ZDZ
+		FROM 
+			AJ_RYCLCS A
+		LEFT JOIN ZDXX B ON A.CSLB=B.ZDDM AND B.ZDBH=109
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND A.AJBH = #{caseNum}
+		</if>
+		<if test="suspectNum !=null and suspectNum !=''">
+			AND A.RYBH = #{suspectNum}
+		</if>
+		ORDER BY A.CZSJ ASC
+    </select>
+    
+    <!-- 查询涉案物品 -->
+    <select id="selectArticlesInvolved" resultType="map">
+		SELECT 
+			MC, TZ, CYR, TO_CHAR(TO_DATE(DJRQ, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DJRQ, '涉案物品' AS SAWP,
+			(SELECT ZDZ FROM ZDXX WHERE ZDBH=1754 AND ZDDM=BGZT) AS BGZT,
+			(SELECT ZDZ FROM ZDXX WHERE ZDBH=746 AND ZDDM=CLZT) AS CLZT
+		FROM WP_JBXX
+		WHERE 1=1
+		<if test="caseNum !=null and caseNum !=''">
+			AND AJBH = #{caseNum}
+		</if>
+    </select>
+</mapper>

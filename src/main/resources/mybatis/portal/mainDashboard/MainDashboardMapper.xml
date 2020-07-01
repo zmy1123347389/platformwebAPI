@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ILawEnforcementDao">
+	<resultMap id="AreaPoliceMapCountMap" type="com.behere.portal.domin.AreaPoliceMapCountBean">
+        <result column="police_code" property="areaPoliceCode"/>
+        <result column="alarm_count" property="alarmCount"/>
+        <result column="police_count" property="policeCount"/>
+        <result column="admin_case_count" property="adminCaseAcceptCount"/>
+        <result column="criminal_case_count" property="criminalCaseAcceptCount"/>
+        <result column="criminal_case_filed_count" property="criminalCaseFiledCount"/>
+    </resultMap>
+	
+    <!-- 统计接处警数量 -->
+    <select id="selectReceivePoliceSize" resultType="map">
+        SELECT 
+        	JJS, CJS + CJS_1 AS CJS
+        FROM 
+			(SELECT COUNT(*) AS JJS FROM JCJ_JBXX WHERE 1=1
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'oracle'">
+				,
+			</if>
+			<if test="_databaseId == 'mysql'">
+				AS JJS,
+			</if>
+			(SELECT COUNT(*) AS CJS FROM JCJ_JBXX WHERE CJBS!='1'
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CJSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CJSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CJSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CJSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(CJSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'oracle'">
+				,
+			</if>
+			<if test="_databaseId == 'mysql'">
+				AS CJS,
+			</if>
+			(SELECT COUNT(*) AS CJS_1 FROM JCJ_JBXX WHERE CJBS!='1' AND CJSJ='0'
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(JJSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'mysql'">
+				AS CJS_1
+			</if>
+    </select>
+    
+    <!-- 统计行政刑事案件受立案数量 -->
+    <select id="selectAdminCriminalSize" resultType="map">
+    	SELECT 
+        	XZAJ, XSAJ, XSLA
+        FROM 
+			(SELECT COUNT(*) AS XZAJ FROM AJ_JBXX WHERE AJLB > '110000' AND AJZT LIKE '2%'
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'oracle'">
+				,
+			</if>
+			<if test="_databaseId == 'mysql'">
+				AS XZAJ,
+			</if>
+			(SELECT COUNT(*) AS XSAJ FROM AJ_JBXX WHERE AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%'
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'oracle'">
+				,
+			</if>
+			<if test="_databaseId == 'mysql'">
+				AS XSAJ,
+			</if>
+			(SELECT count(*) AS XSLA FROM AJ_JBXX WHERE AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%' AND AJZT != '101'
+				<if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(LARQ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(LARQ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(LARQ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(LARQ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(LARQ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+			) 
+			<if test="_databaseId == 'mysql'">
+				AS XSLA
+			</if>
+    </select>
+    
+    <!-- 统计辖区派出所接警数量 -->
+    <select id="selectAreaPoliceMapReceiveSize" resultMap="AreaPoliceMapCountMap">
+		SELECT 
+			COUNT(*) AS ALARM_COUNT, JJDW AS POLICE_CODE
+		FROM 
+			JCJ_JBXX WHERE 1=1 
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(JJSJ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(JJSJ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(JJSJ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(JJSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(JJSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND JJDW IN <include refid="common.units"/>
+		GROUP BY JJDW
+    </select>
+    
+    <!-- 统计辖区派出所处警数量 -->
+    <select id="selectAreaPoliceMapPoliceSize" resultMap="AreaPoliceMapCountMap">
+		SELECT 
+			COUNT(*) AS POLICE_COUNT, CZHDW AS POLICE_CODE 
+		FROM 
+			JCJ_JBXX WHERE 1=1 
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 4) ELSE SUBSTR(CJSJ, 1, 4) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 6) ELSE SUBSTR(CJSJ, 1, 6) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND CJBS!='1' 
+		AND CZHDW IN <include refid="common.units"/> 
+		GROUP BY CZHDW
+    </select>
+    
+    <!-- 统计辖区派出所处警数量且处警单位为空 -->
+    <select id="selectAreaPoliceMapPoliceCodeNullSize" resultMap="AreaPoliceMapCountMap">
+		SELECT 
+			COUNT(*)AS POLICE_COUNT, JJDW AS POLICE_CODE 
+		FROM 
+			JCJ_JBXX WHERE 1=1 
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 4) ELSE SUBSTR(CJSJ, 1, 4) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 6) ELSE SUBSTR(CJSJ, 1, 6) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) <![CDATA[>=]]> #{startDate} 
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND (CASE WHEN CJSJ='0' THEN SUBSTR(JJSJ, 1, 8) ELSE SUBSTR(CJSJ, 1, 8) END) <![CDATA[<=]]> #{endDate} 
+			</if>
+		</if>
+		AND CJBS!='1' AND CZHDW IS NULL 
+		AND JJDW IN <include refid="common.units"/> 
+		GROUP BY JJDW
+    </select>
+    
+    <!-- 统计派出所行政案件受案数量 -->
+    <select id="selectAreaPoliceMapAdminCaseSize" resultMap="AreaPoliceMapCountMap">
+    	SELECT 
+    		COUNT(*) AS ADMIN_CASE_COUNT, SLDW AS POLICE_CODE
+    	FROM 
+    		AJ_JBXX WHERE AJLB > '110000' AND AJZT LIKE '2%'
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND SLDW IN <include refid="common.units"/>
+    	GROUP BY SLDW
+    </select>
+    
+    <!-- 统计派出所刑事案件受案数量 -->
+    <select id="selectAreaPoliceMapCriminalCaseSize" resultMap="AreaPoliceMapCountMap">
+    	SELECT 
+    		COUNT(*) AS CRIMINAL_CASE_COUNT, SLDW AS POLICE_CODE
+    	FROM 
+    		AJ_JBXX WHERE AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%'
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND SLDW IN <include refid="common.units"/>
+    	GROUP BY SLDW
+    </select>
+    
+    <!-- 统计派出所刑事案件立案数量 -->
+    <select id="selectAreaPoliceMapCriminalFilingSize" resultMap="AreaPoliceMapCountMap">
+    	SELECT 
+    		COUNT(*) AS CRIMINAL_CASE_FILED_COUNT, LADW AS POLICE_CODE
+    	FROM 
+    		AJ_JBXX 
+    	WHERE AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%' AND AJZT != '101'
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(LARQ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(LARQ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(LARQ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(LARQ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(LARQ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND LADW IN <include refid="common.units"/>
+    	GROUP BY LADW
+    </select>
+    
+    <!-- 查询案件列表信息 -->
+    <select id="selectAllCaseByPage" resultType="map">
+		SELECT 
+			A.AJBH,A.AJMC,B.ZDZ AS AJLB,D.ZDZ AS AJZT,A.JYAQ,C.ZDZ AS BADW,A.SLR,
+			A.SLSJ
+		FROM 
+			AJ_JBXX A
+		LEFT JOIN ZDXX B ON A.AJLB=B.ZDDM AND B.ZDBH=1650 
+		LEFT JOIN ZDXX C ON A.SLDW=C.ZDDM AND C.ZDBH=1
+		LEFT JOIN ZDXX D ON A.AJZT=D.ZDDM AND D.ZDBH=974
+		WHERE 1=1
+		<if test="ajbh !=null and ajbh !=''">
+			AND A.AJBH = #{ajbh}
+		</if>
+		<if test="ajmc !=null and ajmc !=''">
+			AND A.AJMC LIKE CONCAT('%',CONCAT(#{ajmc},'%')) ESCAPE '/'
+		</if>
+		<if test="jyaq !=null and jyaq !=''">
+			AND A.JYAQ LIKE CONCAT('%',CONCAT(#{jyaq},'%')) ESCAPE '/'
+		</if>
+		<if test="sldw !=null and sldw !=''">
+			AND A.SLDW = #{sldw}
+		</if>
+		<if test="slsj !=null and slsj !=''">
+			AND SUBSTR(A.SLSJ, 1, 8) = #{slsj}
+		</if>
+		ORDER BY A.SLSJ DESC
+    </select>
+</mapper>

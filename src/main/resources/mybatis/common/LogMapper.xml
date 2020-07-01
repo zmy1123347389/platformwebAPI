@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.behere.common.dao.LogDao">
+
+	<select id="get" resultType="com.behere.common.domain.LogDO">
+		select id,user_id,username,operation,time,method,params,ip,gmt_create from sys_log where id = #{value}
+	</select>
+
+	<select id="list" resultType="com.behere.common.domain.LogDO">
+		select id,user_id,username,operation,time,method,params,ip,gmt_create from sys_log
+        <where>  
+		  		  <if test="id != null and id != ''"> and id = #{id} </if>
+		  		  <if test="userId != null and userId != ''"> and user_id = #{userId} </if>
+		  		  <if test="username != null and username != ''"> and username = #{username} </if>
+		  		  <if test="operation != null and operation != ''"> and operation = #{operation} </if>
+		  		  <if test="time != null and time != ''"> and time = #{time} </if>
+		  		  <if test="method != null and method != ''"> and method = #{method} </if>
+		  		  <if test="params != null and params != ''"> and params = #{params} </if>
+		  		  <if test="ip != null and ip != ''"> and ip = #{ip} </if>
+		  		  <if test="gmtCreate != null and gmtCreate != ''"> and gmt_create = #{gmtCreate} </if>
+		  		</where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+			<otherwise>
+                order by id desc
+			</otherwise>
+        </choose>
+	</select>
+	
+ 	<select id="count" resultType="int">
+		select count(*) from sys_log
+		 <where>  
+		  		  <if test="id != null and id != ''"> and id = #{id} </if>
+		  		  <if test="userId != null and userId != ''"> and user_id = #{userId} </if>
+		  		  <if test="username != null and username != ''"> and username = #{username} </if>
+		  		  <if test="operation != null and operation != ''"> and operation = #{operation} </if>
+		  		  <if test="time != null and time != ''"> and time = #{time} </if>
+		  		  <if test="method != null and method != ''"> and method = #{method} </if>
+		  		  <if test="params != null and params != ''"> and params = #{params} </if>
+		  		  <if test="ip != null and ip != ''"> and ip = #{ip} </if>
+		  		  <if test="gmtCreate != null and gmtCreate != ''"> and gmt_create = #{gmtCreate} </if>
+		  		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.behere.common.domain.LogDO" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO sys_log
+		<trim prefix="(" suffix=")" suffixOverrides="," >
+		ID
+		<if test="userId !=null and userId !=''">
+		,USER_ID
+		</if>
+		<if test="username !=null and username !=''">
+		,USERNAME
+		</if>
+		<if test="operation !=null and operation !=''">
+		,OPERATION
+		</if>
+		<if test="time !=null and time !=''">
+		,TIME
+		</if>
+		<if test="method !=null and method !=''">
+		,METHOD
+		</if>
+		<if test="params !=null and params !=''">
+		,PARAMS
+		</if>
+		<if test="ip !=null and ip !=''">
+		,IP
+		</if>
+		<if test="gmtCreate !=null and gmtCreate !=''">
+		,GMT_CREATE
+		</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides="," >
+		#{id}
+		<if test="userId !=null and userId !=''">
+		,#{userId}
+		</if>
+		<if test="username !=null and username !=''">
+		,#{username}
+		</if>
+		<if test="operation !=null and operation !=''">
+		,#{operation}
+		</if>
+		<if test="time !=null and time !=''">
+		,#{time}
+		</if>
+		<if test="method !=null and method !=''">
+		,#{method}
+		</if>
+		<if test="params !=null and params !=''">
+		,#{params}
+		</if>
+		<if test="ip !=null and ip !=''">
+		,#{ip}
+		</if>
+		<if test="gmtCreate !=null and gmtCreate !=''">
+		,#{gmtCreate}
+		</if>
+	</trim>
+	</insert>
+	 
+	<update id="update" parameterType="com.behere.common.domain.LogDO">
+		UPDATE SYS_LOG
+		<set>
+		<if test="userId !=null">
+		USER_ID=#{userId},
+		</if>
+		<if test="username !=null">
+		USERNAME=#{username},
+		</if>
+		<if test="operation !=null">
+		OPERATION=#{operation},
+		</if>
+		<if test="time !=null">
+		TIME=#{time},
+		</if>
+		<if test="method !=null">
+		METHOD=#{method},
+		</if>
+		<if test="params !=null">
+		PARAMS=#{params},
+		</if>
+		<if test="ip !=null">
+		IP=#{ip},
+		</if>
+		<if test="gmtCreate !=null">
+		GMT_CREATE=#{gmtCreate}
+		</if>
+		</set>
+		where ID = #{id}
+	</update>
+	
+	
+	<delete id="remove">
+		delete from sys_log where id = #{value}
+	</delete>
+	
+	<delete id="batchRemove">
+		delete from sys_log where id in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+</mapper>

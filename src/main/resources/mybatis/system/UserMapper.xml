@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.behere.system.dao.UserDao">
+
+	<select id="queryUserByMobile" resultType="com.behere.system.domain.User" parameterType="java.lang.String">
+		SELECT
+			*
+		FROM
+			t_user
+		WHERE
+			mobile = #{mobile}
+	</select>
+
+	<select id="queryUserByMobileAndPassword" resultType="com.behere.system.model.UserModel">
+		SELECT
+			u.id,
+			u.head_portrait,
+			u.nick_name,
+			u.city,
+			u.age,
+			'' as professionName,
+			u.signature,
+			u.wechat_code,
+			u.mobile,
+			u.gender,
+			u.netease_token,
+			u.balance,
+			u.service_price,
+			u.auth,
+			u.flower,
+			u.online,
+			u.vip,
+			u.deleted
+		FROM
+			t_user u
+		WHERE
+			u.mobile = #{mobile} AND u.password = #{password}
+	</select>
+
+	<insert id="saveUser" keyProperty="id" keyColumn="id" useGeneratedKeys="true" parameterType="com.behere.system.domain.User">
+		INSERT INTO t_user(
+			mobile,
+			password,
+			username,
+			my_invitation_code,
+			invitation_code
+		) VALUES (
+			#{mobile},
+			#{password},
+			#{mobile},
+			#{myInvitationCode},
+			#{invitationCode}
+		)
+	</insert>
+
+	<update id="updateUserHeadPortrait">
+		UPDATE
+			t_user
+		SET
+			head_portrait = #{headPortrait}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<update id="updateUserIdentityCard">
+		UPDATE
+			t_user
+		SET
+			identity_card = #{identityCard}
+		WHERE
+			id = #{userId}
+	</update>
+	
+	<update id="updateWechatQRcode">
+		UPDATE
+			t_user
+		SET
+			wechat_code = #{wechatCode}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<select id="queryUserById" parameterType="java.lang.String" resultType="com.behere.system.model.UserModel">
+		SELECT
+			u.id,
+			u.head_portrait,
+			u.nick_name,
+			u.city,
+			u.age,
+			'' as professionName,
+			u.signature,
+			u.wechat_code,
+			u.mobile,
+			u.gender,
+			u.netease_token,
+			u.balance,
+			u.service_price,
+			u.auth,
+			u.flower,
+			u.online,
+			u.vip,
+			u.my_invitation_code,
+			u.invitation_code,
+			u.face_time
+		FROM
+			t_user u
+		WHERE
+			u.id = #{userId}
+	</select>
+	
+	<select id="queryUserByNickName" parameterType="java.lang.String" resultType="com.behere.system.model.UserModel">
+		SELECT
+			id
+		FROM
+			t_user
+		WHERE
+			nick_name = #{nickName}
+	</select>
+	
+	<update id="updateUserInfoById" parameterType="com.behere.system.domain.User">
+		UPDATE
+			t_user
+		SET
+			nick_name = #{nickName},
+    		city = #{city},
+    		age = #{age},
+    		<if test="profession != 0">
+    		profession = #{profession},
+			</if>
+    		signature = #{signature}
+		WHERE
+			id = #{id}		
+	</update>
+	
+	<update id="updateUserGenderById" parameterType="com.behere.system.domain.User">
+		UPDATE
+			t_user
+		SET
+			gender = #{gender}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<update id="updateUserNeteaseToken">
+		UPDATE
+			t_user
+		SET
+			netease_token = #{neteaseToken}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<update id="updatePassword">
+		UPDATE
+			t_user
+		SET
+			password = #{password}
+		WHERE
+			mobile = #{mobile}
+	</update>
+
+	<update id="updateServicePrice">
+
+		UPDATE
+			t_user
+		SET
+			service_price = #{servicePrice}
+		WHERE
+			id = #{userId}
+	</update>
+	
+	<update id="updateUserVip">
+		UPDATE
+			t_user
+		SET
+			vip = #{vip}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<select id="likeUserByNickName" resultType="com.behere.system.model.UserSearchModel">
+		SELECT
+			id,
+			nick_name,
+			age,
+			gender,
+			signature,
+            online,
+			head_portrait,
+            face_time
+		FROM
+			t_user u
+		WHERE
+			1 = 1
+		<if test="idOrNickName != null and idOrNickName != ''">
+			AND (u.id like '${idOrNickName}%' or u.nick_name LIKE '${idOrNickName}%')
+		</if>
+		<if test="gender != 0">
+			AND u.gender = #{gender}
+		</if>
+	</select>
+	
+	<select id="queryAllUsers" resultType="com.behere.system.model.UserModel">
+		SELECT
+			*
+		FROM
+			t_user
+	</select>
+	
+	<update id="reduceFlower">
+		UPDATE
+			t_user
+		SET
+			flower = flower - #{num}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<update id="reduceBalance">
+		UPDATE
+			t_user
+		SET
+			balance = balance - #{num}
+		WHERE
+			id = #{userId} AND balance >= #{num}
+	</update>
+
+	<update id="addBalance">
+		UPDATE
+			t_user
+		SET
+			balance = balance + #{num}
+		WHERE
+			id = #{userId}
+	</update>
+
+	<select id="isExsitNickName" resultType="com.behere.system.domain.User">
+		SELECT * FROM t_user WHERE nick_name = #{nickName} AND id != #{userId}
+	</select>
+
+    <update id="updateUserIndexImage">
+        UPDATE
+          t_user
+        SET
+          index_image = #{indexImage}
+        WHERE
+          id = #{userId}
+    </update>
+
+	<select id="queryUserAuth" resultType="com.behere.system.model.UserAuthModel">
+		SELECT
+			id,
+			identity_card,
+			index_image,
+			auth_video
+		FROM
+			t_user
+		WHERE
+			id = #{userId}
+	</select>
+	
+	<insert id="saveUserAuth">
+		INSERT INTO t_user_auth (
+			user_id
+		) VALUES (
+			#{userId}
+		)
+	</insert>
+
+	<!-- 查询用户首页 start-->
+	<select id="queryUserIndex" resultType="com.behere.system.domain.UserIndex">
+		  SELECT
+				u.id,
+				u.nick_name,
+				u.gender,
+				u.online,
+				u.age,
+				u.wechat_code,
+				u.head_portrait,
+				u.service_price,
+				u.city,
+				u.auth,
+				u.offline_time,
+				u.face_time
+		  FROM
+			t_user u
+		  WHERE
+			u.id = #{userId}
+	</select>
+
+	<!-- 查询用户首页 end -->
+	
+	<insert id="saveUserPic">
+		INSERT INTO t_user_pic (
+			id,
+			pic_url,
+			user_id
+		) VALUES (
+			#{id},
+			#{picUrl},
+			#{userId}
+		)
+	</insert>
+	
+	<select id="queryUserPics" resultType="com.behere.system.domain.UserPic">
+		SELECT id, pic_url FROM t_user_pic p WHERE user_id = #{userId}
+	</select>
+	
+	<delete id="deleteUserPic">
+		DELETE FROM t_user_pic WHERE id = #{picId}
+	</delete>
+	
+	<select id="queryMyFlower" resultType="java.lang.Double">
+		SELECT flower FROM t_user WHERE id = #{userId}
+	</select>
+
+	
+	<select id="queryUserByUnionId" resultType="com.behere.system.model.UserModel">
+		SELECT * FROM t_user WHERE union_id = #{unionId}
+	</select>
+
+    <select id="queryUserByInvitationCode" resultType="com.behere.system.model.UserModel">
+        SELECT * FROM t_user WHERE my_invitation_code = #{invitationCode}
+    </select>
+
+	<select id="queryRecommend" resultType="com.behere.system.model.UserSearchModel">
+        SELECT
+            u.id,
+            nick_name,
+            age,
+            gender,
+            signature,
+            u.online,
+            u.head_portrait,
+            u.face_time
+        FROM
+            t_user u
+        WHERE
+            u.online = 1
+        <if test="auth != 1">
+            AND u.auth = 1
+        </if>
+        <if test="auth == 1">
+            AND u.auth != 1
+        </if>
+        <if test="gender == 1">
+            AND gender = 2
+        </if>
+        <if test="gender == 2">
+            AND gender = 1
+        </if>
+        GROUP BY
+            u.id
+    </select>
+
+    <update id="updateUserOnOrOffOnline">
+        UPDATE
+          t_user
+        SET
+          online = #{online},
+          offline_time = now()
+        WHERE
+          id = #{userId}
+    </update>
+
+    <select id="queryMyPkInformation" resultType="com.behere.system.domain.BestFriend">
+        SELECT
+			u.id,
+			u.nick_name,
+			u.gender,
+			u.head_portrait,
+		 u.auth,
+		 u.age
+		FROM
+			t_user u
+		WHERE
+			u.id = #{userId}
+    </select>
+
+	<select id="lockUser" resultType="com.behere.system.model.UserModel">
+		SELECT * FROM t_user WHERE id in (#{fromUser}, #{toUser}) FOR UPDATE
+	</select>
+
+	<update id="updateUserAuth">
+		UPDATE
+			t_user
+		SET
+			auth = #{userAuth}
+		WHERE
+			id = #{userId}
+	</update>
+    
+    <select id="queryUserAuths" resultType="com.behere.system.model.UserAuth">
+        SELECT * FROM t_user_auth WHERE status = 0 AND user_id = #{userId}
+    </select>
+
+    <update id="updateUserFaceTime">
+        UPDATE t_user SET face_time = #{status} WHERE id = #{customerId} OR id = #{serviceId}
+    </update>
+
+</mapper>

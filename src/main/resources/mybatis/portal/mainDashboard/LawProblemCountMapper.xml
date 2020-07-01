@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ILawProblemCountDao">
+	<!-- 统计热力图110接处警执法问题数 -->
+    <select id="selectReceivePoliceCount" resultType="map">
+    	SELECT
+            CZHDW AS POLICECODE, COUNT(CZHDW) AS PRO_COUNT, '110接处警反馈超期' AS PROTYPE
+        FROM
+            (
+                SELECT 
+                	CZHDW
+                FROM
+                    JCJ_JBXX
+                WHERE
+                    CJBS!='1' AND CJJG IS NOT NULL AND CJJG != '90' AND AJBH IS NOT NULL
+                AND CZHDW IN ('610626600000','610626620000','610626530000','610626510000','610626570000','610626580000','610626590000','610626540000','610626520000','610626560000','610626610000','610626550000')
+                AND TO_NUMBER((
+                            CASE
+                                WHEN TRIM(CZTXSJ)!='0'
+                                THEN TO_DATE(TRIM(CZTXSJ), 'YYYY-MM-DD HH24:MI:SS')
+                            END -
+                            CASE
+                                WHEN TRIM(CJSJ)!='0'
+                                THEN TO_DATE(TRIM(CJSJ), 'YYYY-MM-DD HH24:MI:SS')
+                            END )*24) >= 24
+                <if test="type == 1">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CZTXSJ, 1, 4) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 2">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CZTXSJ, 1, 6) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 3">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CZTXSJ, 1, 8) = #{startDate}
+					</if>
+				</if>
+				<if test="type == 4 or type == 5">
+					<if test="startDate !=null and startDate !=''">
+						AND SUBSTR(CZTXSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+					</if>
+					<if test="endDate !=null and endDate !=''">
+						AND SUBSTR(CZTXSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+					</if>
+				</if>
+                UNION ALL
+                SELECT
+                    CZHDW
+                FROM
+                    JCJ_JBXX
+                WHERE
+                    CJBS!='1' AND CJJG IS NULL AND AJBH IS NOT NULL 
+                AND CZHDW IN <include refid="common.units"/>
+			) A GROUP BY CZHDW
+    </select>
+    
+    <!-- 统计热力图行政案件受理执法问题数 -->
+    <select id="selectAdminCaseCount" resultType="map">
+    	SELECT 
+    		SLDW AS POLICECODE, COUNT(SLDW) AS PRO_COUNT, '行政案件受理超期' AS PROTYPE
+		FROM 
+			AJ_JBXX A LEFT JOIN JCJ_JBXX B ON A.AJBH = B.AJBH
+		WHERE 
+			A.AJLB > '110000' AND B.CJBS!='1' AND AJZT LIKE '2%' AND 
+			A.SLDW IN <include refid="common.units"/> AND
+			<if test="_databaseId == 'oracle'">
+				TO_NUMBER(TO_DATE(SUBSTR(A.SLSJ, 1, 8), 'YYYY-MM-DD') - TO_DATE(SUBSTR(B.JJSJ, 1, 8), 'YYYY-MM-DD')) > 1 
+			</if>
+			<if test="_databaseId == 'mysql'">
+				DATEDIFF(SUBSTR(A.SLSJ, 1, 8), SUBSTR(B.JJSJ, 1, 8)) > 1 
+			</if>
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件受理执法问题数 -->
+    <select id="selectCriminalCaseCount" resultType="map">
+    	SELECT 
+    		SLDW AS POLICECODE, COUNT(SLDW) AS PRO_COUNT, '刑事案件受理超期' AS PROTYPE
+		FROM 
+			AJ_JBXX A LEFT JOIN JCJ_JBXX B ON A.AJBH = B.AJBH
+		WHERE 
+			A.AJLB <![CDATA[<=]]> '110000' AND B.CJBS!='1' AND AJZT LIKE '1%' AND 
+			A.SLDW IN <include refid="common.units"/> AND
+			<if test="_databaseId == 'oracle'">
+				TO_NUMBER(TO_DATE(SUBSTR(A.SLSJ, 1, 8), 'YYYY-MM-DD') - TO_DATE(SUBSTR(B.JJSJ, 1, 8), 'YYYY-MM-DD')) > 1 
+			</if>
+			<if test="_databaseId == 'mysql'">
+				DATEDIFF(SUBSTR(A.SLSJ, 1, 8), SUBSTR(B.JJSJ, 1, 8)) > 1
+			</if>
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(A.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY A.SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件立案执法问题数 -->
+    <select id="selectCriminalRegisterCount" resultType="map">
+    	SELECT 
+    		SLDW AS POLICECODE, COUNT(SLDW) AS PRO_COUNT, '刑事案件立案超期' AS PROTYPE
+		FROM 
+			AJ_JBXX 
+		WHERE 
+			AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%' AND AJZT != '101' AND 
+			SLDW IN <include refid="common.units"/> AND
+			<if test="_databaseId == 'oracle'">
+				TO_NUMBER(
+					CASE WHEN TRIM(LARQ)!='0' THEN TO_DATE(SUBSTR(TRIM(LARQ), 1, 8), 'YYYY-MM-DD') END
+					- 
+					CASE WHEN TRIM(SLSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(SLSJ), 1, 8), 'YYYY-MM-DD') END
+				) > 7
+			</if>
+			<if test="_databaseId == 'mysql'">
+				DATEDIFF(SUBSTR(LARQ, 1, 8), SUBSTR(SLSJ, 1, 8)) > 7
+			</if>
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY SLDW
+    </select>
+    
+    <!-- 统计热力图行政案件办理执法问题数 -->
+    <select id="selectAdminCaseDealCount" resultType="map">
+    	SELECT 
+			SLDW AS POLICECODE, COUNT(SLDW) AS PRO_COUNT, '行政案件办理超期' AS PROTYPE
+		FROM 
+			AJ_JBXX 
+		WHERE 
+			AJLB > '110000' AND AJZT LIKE '2%' AND 
+			SLDW IN <include refid="common.units"/> AND
+			(JARQ='0' OR 
+			<if test="_databaseId == 'oracle'">
+				TO_NUMBER(
+					CASE WHEN TRIM(JARQ)!='0' THEN TO_DATE(SUBSTR(TRIM(JARQ), 1, 8), 'YYYY-MM-DD') END
+					- 
+					CASE WHEN SLSJ!='0' THEN TO_DATE(SUBSTR(SLSJ, 1, 8), 'YYYY-MM-DD') END
+				) > 30
+			</if>
+			<if test="_databaseId == 'mysql'">
+				DATEDIFF(SUBSTR(JARQ, 1, 8), SUBSTR(SLSJ, 1, 8)) > 30 
+			</if>
+			)
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件拘留执法问题数 -->
+    <select id="selectCriminalCaseDetentionCount" resultType="map">
+    	SELECT 
+    		B.SLDW AS POLICECODE, COUNT(B.SLDW) AS PRO_COUNT, '刑事案件拘留超期' AS PROTYPE
+		FROM 
+			AJ_RYCLCS A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH=B.AJBH
+		LEFT JOIN 
+			ZDXX C ON C.ZDDM=A.JDQX
+		WHERE 
+			A.CSLB = '1202' AND A.JDQX IS NOT NULL AND ZDBH = 1787 AND A.QSSJ IS NOT NULL AND
+			B.SLDW IN <include refid="common.units"/>
+			AND LENGTH(TRIM(A.QSSJ))>=8
+			AND TO_NUMBER(
+				CASE WHEN TRIM(A.ZZSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.ZZSJ), 1, 8), 'YYYY-MM-DD')  END
+				- 
+				CASE WHEN TRIM(A.QSSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.QSSJ), 1, 8), 'YYYY-MM-DD')  END
+			) > C.ZDDM-20
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY B.SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件逮捕执法问题数 -->
+    <select id="selectCriminalCaseArrestCount" resultType="map">
+    	SELECT 
+    		B.SLDW AS POLICECODE, COUNT(B.SLDW) AS PRO_COUNT, '刑事案件逮捕超期' AS PROTYPE
+		FROM 
+			AJ_RYCLCS A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH=B.AJBH
+		LEFT JOIN 
+			ZDXX C ON C.ZDDM=A.JDQX
+		WHERE 
+			A.CSLB = '1222' AND A.JDQX IS NOT NULL AND ZDBH = 1787 AND A.QSSJ IS NOT NULL AND
+			B.SLDW IN <include refid="common.units"/>
+			AND TO_NUMBER(
+				CASE WHEN TRIM(A.ZZSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.ZZSJ), 1, 8), 'YYYY-MM-DD')  END
+				- 
+				CASE WHEN TRIM(A.QSSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.QSSJ), 1, 8), 'YYYY-MM-DD')  END
+			)/30 >= (C.ZDDM - 50 + 0.1)
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY B.SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件取保候审执法问题数 -->
+    <select id="selectCriminalCaseBPTCount" resultType="map">
+    	SELECT 
+    		B.SLDW AS POLICECODE, COUNT(B.SLDW) AS PRO_COUNT, '刑事案件取保候审超期' AS PROTYPE
+		FROM 
+			AJ_RYCLCS A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH=B.AJBH
+		LEFT JOIN 
+			ZDXX C ON C.ZDDM=A.JDQX
+		WHERE 
+			A.CSLB = '1206' AND A.JDQX IS NOT NULL AND ZDBH = 1787 AND A.QSSJ IS NOT NULL AND
+			B.SLDW IN <include refid="common.units"/>
+			AND TO_NUMBER(
+				CASE WHEN TRIM(A.ZZSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.ZZSJ), 1, 8), 'YYYY-MM-DD')  END
+				- 
+				CASE WHEN TRIM(A.QSSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.QSSJ), 1, 8), 'YYYY-MM-DD')  END
+			) > 365
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY B.SLDW
+    </select>
+    
+    <!-- 统计热力图刑事案件监视居住执法问题数 -->
+    <select id="selectCriminalCaseSORCount" resultType="map">
+    	SELECT 
+    		B.SLDW AS POLICECODE, COUNT(B.SLDW) AS PRO_COUNT, '刑事案件监视居住超期' AS PROTYPE
+		FROM 
+			AJ_RYCLCS A 
+		LEFT JOIN 
+			AJ_JBXX B ON A.AJBH=B.AJBH
+		LEFT JOIN 
+			ZDXX C ON C.ZDDM=A.JDQX
+		WHERE 
+			A.CSLB = '1204' AND A.JDQX IS NOT NULL AND ZDBH = 1787 AND A.QSSJ IS NOT NULL AND 
+			B.SLDW IN <include refid="common.units"/> AND
+			(CASE WHEN C.ZDDM='54' THEN 
+				TO_NUMBER(
+					CASE WHEN TRIM(A.ZZSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.ZZSJ), 1, 8), 'YYYY-MM-DD')  END
+					- 
+					CASE WHEN TRIM(A.QSSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.QSSJ), 1, 8), 'YYYY-MM-DD')  END
+				) 
+			END > 182
+			OR
+			CASE WHEN C.ZDDM!='54' THEN 
+				TO_NUMBER(
+					CASE WHEN TRIM(A.ZZSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.ZZSJ), 1, 8), 'YYYY-MM-DD')  END
+					- 
+					CASE WHEN TRIM(A.QSSJ)!='0' THEN TO_DATE(SUBSTR(TRIM(A.QSSJ), 1, 8), 'YYYY-MM-DD')  END
+				)/30 
+			END > (C.ZDDM - 50 + 0.1)
+			)
+			<if test="type == 1">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 4) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 2">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 6) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 3">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) = #{startDate}
+				</if>
+			</if>
+			<if test="type == 4 or type == 5">
+				<if test="startDate !=null and startDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+				</if>
+				<if test="endDate !=null and endDate !=''">
+					AND SUBSTR(B.SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+				</if>
+			</if>
+		GROUP BY B.SLDW
+    </select>
+</mapper>

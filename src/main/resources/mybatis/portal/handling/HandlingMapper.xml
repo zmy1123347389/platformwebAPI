@@ -1,0 +1,318 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.IHandlingDao">
+	<!-- 统计办案数据 -->
+    <select id="selectHandling" resultType="map">
+    	SELECT
+				AJ.AJBH,
+				A.S_CODE AS CODE,
+				A.S_FULL_NAME AS FULL_NAME,
+				T.S_CAPTION AS CAPTION,
+				A.S_REASON AS REASON,
+				p.S_NAME as NAME,
+				A.S_DEPT AS DEPT,
+				A.S_INQUEST_DEPT_CAPTION AS INQUEST_DEPT_CAPTION,
+				A.DT_CREATE_TIME AS DT_CREATE_TIME,
+				u.DT_START_USE_TIME as DT_START_USE_TIME,
+				u.DT_END_USE_TIME as DT_END_USE_TIME,
+				P.S_CREDENTIALS_NUM,
+				p.S_DOMICILE,
+				P.I_AGE AS AGE,
+				CS.S_CAPTION AS SEX,
+				D.S_CAPTION AS NATION,
+				P.DT_BIRTHDAY AS BIRTHDAY
+			FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_ARCHIVE_TYPE T ON A.I_TYPE_ID = T.I_ID
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER
+			LEFT JOIN TAB_PERSON P ON P.S_ID = U.S_PERSON_ID
+			LEFT JOIN AJ_JBXX AJ ON AJ.BARZJHM = P.S_CREDENTIALS_NUM
+		  	LEFT JOIN TAB_GA_CODE_SEX CS ON CS.I_ID = P.I_SEX
+			LEFT JOIN TAB_GA_CODE_NATION D ON D.S_ID = P.S_NATION
+			WHERE
+				A.S_FULL_NAME IS NOT NULL
+			ORDER BY A.DT_CREATE_TIME DESC
+    </select>
+	
+	 <!-- 办案区数据基本信息 -->
+	<select id="selectHandlingMap" parameterType="map" resultType="map">
+		SELECT
+				AJ.AJBH,
+				A.S_CODE AS CODE,
+				A.S_FULL_NAME AS FULL_NAME,
+				T.S_CAPTION AS CAPTION,
+				A.S_REASON AS REASON,
+				p.S_NAME as NAME,
+				A.S_DEPT AS DEPT,
+				A.S_INQUEST_DEPT_CAPTION AS INQUEST_DEPT_CAPTION,
+				A.DT_CREATE_TIME AS DT_CREATE_TIME,
+				u.DT_START_USE_TIME as DT_START_USE_TIME,
+				u.DT_END_USE_TIME as DT_END_USE_TIME,
+				P.S_CREDENTIALS_NUM,
+				p.S_DOMICILE,
+				P.I_AGE AS AGE,
+				CS.S_CAPTION AS SEX,
+				D.S_CAPTION AS NATION,
+				P.DT_BIRTHDAY AS BIRTHDAY,
+				POLICE.POLICE_NAME
+			FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_ARCHIVE_TYPE T ON A.I_TYPE_ID = T.I_ID
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER
+			LEFT JOIN TAB_PERSON P ON P.S_ID = U.S_PERSON_ID
+			LEFT JOIN AJ_JBXX AJ ON AJ.BARZJHM = P.S_CREDENTIALS_NUM
+		  	LEFT JOIN TAB_GA_CODE_SEX CS ON CS.I_ID = P.I_SEX
+			LEFT JOIN TAB_GA_CODE_NATION D ON D.S_ID = P.S_NATION
+			,(
+				SELECT LISTAGG(TO_CHAR(U.S_CAPTION), ',')WITHIN GROUP( ORDER BY U.S_CAPTION) AS POLICE_NAME FROM TAB_INQUEST_STANDBOOK_POLICE SP
+				LEFT JOIN  TAB_INQUEST_STANDBOOK_USER SU ON SU.S_ID = SP.S_STANDBOOK_ID
+				LEFT JOIN TAB_USER U ON SP.S_USER_ID = U.S_ID
+				WHERE SU.S_TABULATE_NUMBER = #{code}
+				GROUP BY SP.S_STANDBOOK_ID
+			) POLICE
+			WHERE
+				A.S_FULL_NAME IS NOT NULL
+			<if test="code !=null and code !=''">
+				AND A.S_CODE = #{code}
+			</if>
+			ORDER BY A.DT_CREATE_TIME DESC
+	</select>
+	
+		<!-- 统计办案数据分页已关联查询 -->
+		<select id="selectHandlingPage" parameterType="com.behere.portal.domin.ArchiveExecutionBean" resultType="com.behere.portal.domin.ArchiveExecutionBean">
+		SELECT
+				AJ.AJBH,
+				A.S_CODE AS CODE,
+				A.S_FULL_NAME AS FULL_NAME,
+				T.S_CAPTION AS CAPTION,
+				A.S_REASON AS REASON,
+				p.S_NAME as NAME,
+				A.S_DEPT AS DEPT,
+				A.S_INQUEST_DEPT_CAPTION AS INQUEST_DEPT_CAPTION,
+				A.DT_CREATE_TIME AS DT_CREATE_TIME,
+				u.DT_START_USE_TIME as DT_START_USE_TIME,
+				u.DT_END_USE_TIME as DT_END_USE_TIME
+			FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_ARCHIVE_TYPE T ON A.I_TYPE_ID = T.I_ID
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER 
+			LEFT JOIN TAB_PERSON P ON P.S_ID = U.S_PERSON_ID
+			LEFT JOIN AJ_JBXX AJ ON AJ.BARZJHM = P.S_CREDENTIALS_NUM
+			WHERE
+				A.S_FULL_NAME IS NOT NULL
+				AND AJ.AJBH IS NOT NULL
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'today'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY-mm-dd') = (select TO_CHAR(SYSDATE,'YYYY-mm-dd') as time from dual)
+			</if>
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'month'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY-mm') = (select TO_CHAR(SYSDATE,'YYYY-mm') as time from dual)
+			</if>
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'year'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY') = (select TO_CHAR(SYSDATE,'YYYY') as time from dual)
+			</if>
+			<if test="fullName !=null and fullName !=''">
+				AND A.S_FULL_NAME LIKE '%${fullName}%'
+			</if>
+			<if test="dtStart !=null and dtStart !=''">
+				AND TO_DATE(A.DT_CREATE_TIME,'YYYY-MM-DD HH24:MI:SS') &gt;= TO_DATE(#{dtStart},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			<if test="dtEnd !=null and dtEnd !=''">
+				AND TO_DATE(A.DT_CREATE_TIME,'YYYY-MM-DD HH24:MI:SS') &lt;= TO_DATE(#{dtEnd},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			ORDER BY A.DT_CREATE_TIME DESC
+	</select>
+	
+    <!-- 统计办案数据分页未关联查询 -->
+	<select id="selectHandlingRelevancePage" parameterType="com.behere.portal.domin.ArchiveExecutionBean" resultType="com.behere.portal.domin.ArchiveExecutionBean">
+		SELECT
+				'' as AJBH,
+				A.S_CODE AS CODE,
+				A.S_FULL_NAME AS FULL_NAME,
+				T.S_CAPTION AS CAPTION,
+				A.S_REASON AS REASON,
+				p.S_NAME as NAME,
+				A.S_DEPT AS DEPT,
+				A.S_INQUEST_DEPT_CAPTION AS INQUEST_DEPT_CAPTION,
+				A.DT_CREATE_TIME AS DT_CREATE_TIME,
+				u.DT_START_USE_TIME as DT_START_USE_TIME,
+				u.DT_END_USE_TIME as DT_END_USE_TIME
+			FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_ARCHIVE_TYPE T ON A.I_TYPE_ID = T.I_ID
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER 
+			LEFT JOIN TAB_PERSON P ON P.S_ID = U.S_PERSON_ID
+			WHERE
+				A.S_FULL_NAME IS NOT NULL
+			AND P.S_CREDENTIALS_NUM NOT IN (SELECT AJ.BARZJHM FROM AJ_JBXX AJ WHERE  AJ.BARZJHM IS NOT NULL) OR P.S_CREDENTIALS_NUM IS NULL
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'today'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY-mm-dd') = (select TO_CHAR(SYSDATE,'YYYY-mm-dd') as time from dual)
+			</if>
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'month'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY-mm') = (select TO_CHAR(SYSDATE,'YYYY-mm') as time from dual)
+			</if>
+			<if test="searchTime !=null and searchTime !='' and searchTime == 'year'">
+				AND TO_CHAR(A.DT_CREATE_TIME,'YYYY') = (select TO_CHAR(SYSDATE,'YYYY') as time from dual)
+			</if>
+			<if test="fullName !=null and fullName !=''">
+				AND A.S_FULL_NAME LIKE '%${fullName}%'
+			</if>
+			<if test="dtStart !=null and dtStart !=''">
+				AND TO_DATE(A.DT_CREATE_TIME,'YYYY-MM-DD HH24:MI:SS') &gt;= TO_DATE(#{dtStart},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			<if test="dtEnd !=null and dtEnd !=''">
+				AND TO_DATE(A.DT_CREATE_TIME,'YYYY-MM-DD HH24:MI:SS') &lt;= TO_DATE(#{dtEnd},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			ORDER BY A.DT_CREATE_TIME DESC
+	</select>
+	
+	<!-- 办案区涉案人员台账 -->
+    <select id="selectInquestArchiveEvidenceList" resultType="map">
+    	SELECT
+			B.S_ID AS ID,
+			B.S_INQUEST_ARCHIVE_ID AS INQUEST_ARCHIVE_ID,
+			B.S_CAPTION AS CAPTION,
+			B.I_EVIDENCE_TYPE_ID AS EVIDENCE_TYPE_ID,
+			B.I_EVIDENCE_STATUS_ID AS EVIDENCE_STATUS_ID,
+			B.S_DESCRIPTION AS DESCRIPTION,
+			B.S_OTHER_VIEWS AS OTHER_VIEWS,
+			B.DT_UPLOAD AS DT_UPLOAD,
+			B.DT_MODIFY AS DT_MODIFY,
+			B.S_PATH AS PATH,
+			B.S_MODIFY_USER_ID AS MODIFY_USER_ID,
+			B.S_REMARK AS REMARK,
+			B.I_FILE_SIZE AS FILE_SIZE
+		FROM
+			TAB_INQUEST_ARCHIVE A
+		LEFT JOIN TAB_INQUEST_ARCHIVE_EVIDENCE B ON A.S_ID = B.S_INQUEST_ARCHIVE_ID
+		WHERE 1=1
+		<if test="code !=null and code !=''">
+			AND A.S_CODE = #{code}
+		</if>
+    </select>
+    
+     <!-- 涉案物品信息查询 -->
+    <select id="selectInquestFollowGoodsList" resultType="map">
+    	SELECT
+			G.S_ID as id,                               
+		    G.S_NUMBER as snumber,                                      
+		    G.I_COUNT as count,                                       
+		    G.S_UNIT as unit,                                        
+		    G.S_PROTECT_MEASURE as protectMeasure,                             
+		    G.S_CABINET_NUM as cabinetNum,                                 
+		    G.S_REMARK as remark,                                      
+		    G.S_STANDBOOK_USER_ID as standbookUserId,                           
+		    G.S_CAPTURE as capture,                                     
+		    G.S_CAPTION as caption,                                     
+		    G.I_INVLOVED as invloved,
+		    G.I_GOODS_TYPE_ID as goodsTypeId,
+		    G.S_LOCKER_NUMBER as lockerNumber,                               
+		    G.S_DESCRIPTION as description,                                 
+		    G.I_GOODS_STATUS as goodsStatus,
+		    G.I_RECEIVE_MODE_TYPE as receiveModeType,
+		    G.S_ENTRUST_PERSON as entrustPerson,                              
+		    G.DT_RECEIVE_TIME as receiveTime        
+		FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER
+			LEFT JOIN TAB_INQUEST_FOLLOW_GOODS_INFO G ON U.S_ID = G.S_STANDBOOK_USER_ID
+			where 1=1 
+		<if test="code !=null and code !=''">
+			AND A.S_code = #{code}
+		</if>
+    </select>
+    
+	
+	<!-- 办案区案办案审讯信息 -->
+	 <select id="selectInquestList" resultType="map">
+		SELECT 
+			I.S_ID,
+			P.S_NAME AS NAME,
+			<if test="code ==null or code ==''">
+			'' AS POLICE,
+			</if>
+			<if test="code !=null and code !=''">
+			(
+				SELECT LISTAGG(TO_CHAR(U.S_CAPTION), ',')WITHIN GROUP( ORDER BY U.S_CAPTION) AS POLICE_NAME FROM TAB_INQUEST_STANDBOOK_POLICE SP
+				LEFT JOIN  TAB_INQUEST_STANDBOOK_USER SU ON SU.S_ID = SP.S_STANDBOOK_ID
+				LEFT JOIN TAB_USER U ON SP.S_USER_ID = U.S_ID
+				WHERE 
+				SU.S_TABULATE_NUMBER = #{code}
+				GROUP BY SP.S_STANDBOOK_ID
+			) POLICE,
+			</if>
+			I.S_LOCATION,
+			I.S_USER_NAME,
+			I.DT_START,
+			I.DT_END
+			FROM TAB_INQUEST_ARCHIVE A
+			LEFT JOIN TAB_INQUEST_STANDBOOK_USER U ON A.S_CODE = U.S_TABULATE_NUMBER 
+			LEFT JOIN TAB_INQUEST I ON I.S_STANDBOOK_ID = U.S_ID
+			LEFT JOIN TAB_PERSON P ON P.S_ID = U.S_PERSON_ID
+			WHERE 1=1 
+			<if test="code !=null and code !=''">
+			AND A.S_CODE = #{code}
+			</if>
+			ORDER BY I.DT_START ASC
+	</select>
+    
+     <!-- 统计办案数据 -->
+    <select id="selectHandlingVideoData" resultType="map">
+    	SELECT
+			A.S_CODE AS CODE,
+			A.S_FULL_NAME AS FULLNAME,
+			A.S_TYPE AS TYPE,
+			A.S_NAME AS NAME , A.S_DESCRIPTION AS DESCRIPTION , A.S_POLICE AS POLICE,
+			A.S_PHONE_NUM AS PHONENUM,
+			A.I_COMPULSORY_MEASURES AS COMPULSORYMEASURES,
+			A.DT_START AS DTSTART,
+			A.DT_END AS DTEND,
+			A.I_SUE AS SUE,
+			A.S_NOTE AS NOTE,
+			A.I_OPERATION AS OPERATION
+		FROM
+			TAB_ARCHIVE_EXECUTION A 
+			WHERE A.S_FULL_NAME IS NOT NULL
+    </select>
+    
+    <!-- 统计办案出入区人数 -->
+    <select id="selectHandlingCount" resultType="map">
+    	select A.START_USE_ALL_COUNT as STARTUSEALLCOUNT,B.START_USE_COUNT as STARTUSECOUNT,C.END_USE_COUNT as ENDUSECOUNT from  
+    	
+		(select count(*) as START_USE_ALL_COUNT from tab_inquest_standbook_user) A,
+		
+		(select count(*) as START_USE_COUNT from tab_inquest_standbook_user
+		where 1=1
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'today'">	
+		and TO_CHAR(DT_START_USE_TIME,'YYYY-MM-DD HH24:MI:SS') = (select TO_CHAR(SYSDATE,'YYYY-mm-dd') as time from dual)
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'week'">
+		AND TO_CHAR(DT_START_USE_TIME,'iw')=TO_CHAR(SYSDATE,'iw') AND TO_CHAR(DT_START_USE_TIME,'YY')=TO_CHAR(SYSDATE,'YY')
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'month'">
+		AND TO_CHAR(DT_START_USE_TIME,'YYYY-mm') = (select TO_CHAR(SYSDATE,'YYYY-mm') as time from dual)
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'year'">
+		AND TO_CHAR(DT_START_USE_TIME,'YYYY') = (select TO_CHAR(SYSDATE,'YYYY') as time from dual)
+		</if>
+		<if test="dtStart !=null and dtStart !=''">
+			AND TO_DATE(DT_START_USE_TIME,'YYYY-MM-DD') between  TO_DATE(#{dtStart},'YYYY-MM-DD') and  TO_DATE(#{dtEnd},'YYYY-MM-DD')
+		</if>
+		
+		) B,
+		
+		(select count(*) END_USE_COUNT from tab_inquest_standbook_user
+		where 1=1
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'today'">	
+		and TO_CHAR(DT_END_USE_TIME,'YYYY-MM-DD HH24:MI:SS') = (select TO_CHAR(SYSDATE,'YYYY-mm-dd') as time from dual)
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'week'">
+		AND TO_CHAR(DT_END_USE_TIME,'iw')=TO_CHAR(SYSDATE,'iw') AND TO_CHAR(DT_END_USE_TIME,'YY')=TO_CHAR(SYSDATE,'YY')
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'month'">
+		AND TO_CHAR(DT_END_USE_TIME,'YYYY-mm') = (select TO_CHAR(SYSDATE,'YYYY-mm') as time from dual)
+		</if>
+		<if test="searchTime !=null and searchTime !='' and searchTime == 'year'">
+		AND TO_CHAR(DT_END_USE_TIME,'YYYY') = (select TO_CHAR(SYSDATE,'YYYY') as time from dual)
+		</if>
+		<if test="dtStart !=null and dtStart !=''">
+			AND TO_DATE(DT_END_USE_TIME,'YYYY-MM-DD') between  TO_DATE(#{dtStart},'YYYY-MM-DD') and  TO_DATE(#{dtEnd},'YYYY-MM-DD')
+		</if>
+		) C
+
+    </select>
+</mapper>

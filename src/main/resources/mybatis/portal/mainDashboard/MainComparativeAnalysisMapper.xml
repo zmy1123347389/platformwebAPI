@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.behere.portal.dao.ILawEnforcementDao">
+	<resultMap id="AreaPoliceCaseAndSolvedCount" type="com.behere.portal.domin.AreaPoliceCasesAndSolvedCountBean">
+        <result column="POLICE_CODE" property="areaPoliceCode"/>
+        <result column="CASE_COUNT" property="caseCount"/>
+        <result column="SOLVED_COUNT" property="solvedCount"/>
+    </resultMap>
+	
+	<!-- 统计派出所刑事案件发案数 -->
+    <select id="selectAreaPoliceCaseSize" resultMap="AreaPoliceCaseAndSolvedCount">
+    	SELECT 
+    		COUNT(*) AS CASE_COUNT, SLDW AS POLICE_CODE
+    	FROM 
+    		AJ_JBXX WHERE (AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%' AND AJZT <![CDATA[<>]]> '103')
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(SLSJ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND SLDW IN <include refid="common.units"/>
+    	GROUP BY SLDW
+    </select>
+    
+    <!-- 统计派出所刑事案件破案数 -->
+    <select id="selectAreaPoliceSolvedSize" resultMap="AreaPoliceCaseAndSolvedCount">
+    	SELECT 
+    		COUNT(*) AS SOLVED_COUNT, SLDW AS POLICE_CODE
+    	FROM 
+    		AJ_JBXX WHERE AJLB <![CDATA[<=]]> '110000' AND AJZT LIKE '1%' AND AJZT <![CDATA[>=]]> '104'
+		<if test="type == 1">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(PARQ, 1, 4) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 2">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(PARQ, 1, 6) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 3">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(PARQ, 1, 8) = #{startDate}
+			</if>
+		</if>
+		<if test="type == 4 or type == 5">
+			<if test="startDate !=null and startDate !=''">
+				AND SUBSTR(PARQ, 1, 8) <![CDATA[>=]]> #{startDate}
+			</if>
+			<if test="endDate !=null and endDate !=''">
+				AND SUBSTR(PARQ, 1, 8) <![CDATA[<=]]> #{endDate}
+			</if>
+		</if>
+		AND SLDW IN <include refid="common.units"/>
+    	GROUP BY SLDW
+    </select>
+</mapper>
